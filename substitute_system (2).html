@@ -1,44 +1,4 @@
-        document.addEventListener('DOMContentLoaded', () => {
-            setupEventListeners();
-            renderForm();
-            displayAssignmentSummary();
-            
-            // 生成示範資料
-            generateSampleData();
-        });
-
-        // 生成示範資料
-        const generateSampleData = () => {
-            // 設定一些示範代課記錄
-            const sampleAssignments = [
-                {
-                    substituteCadre: "王小明",
-                    substitutedMember: "張小芳",
-                    school: "仁愛國小",
-                    student: "林小強、黃小玲",
-                    link: "https://meet.google.com/xyz-uvwx-rst",
-                    classType: "individual",
-                    date: new Date(Date.now() - 86400000).toISOString() // 昨天
-                },
-                {
-                    substituteCadre: "李小強",
-                    substitutedMember: "陳小美、林小雄",
-                    school: "多校聯合",
-                    student: "陳小美、林小雄",
-                    link: "https://meet.google.com/group-class-001",
-                    classType: "group",
-                    groupClass: "團班1",
-                    date: new Date(Date.now() - 172800000).toISOString() // 前天
-                }
-            ];
-
-            // 更新代課次數
-            assignCounts["王小明"] = 1;
-            assignCounts["李小強"] = 1;
-
-            // 加入到歷史記錄
-            substituteAssignments = [...sampleAssignments, ...substituteAssignments];
-            substituteAssignments.sort((a, b) => new Date(b.date) - new<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
@@ -46,120 +6,107 @@
     <title>幹部代課分配系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
-        // 示範成員名單資料
-        const memberData = {
-            "王小明": {
-                school: "明德國小",
-                student: "李小華、陳小美",
-                link: "https://meet.google.com/abc-defg-hij"
-            },
-            "張小芳": {
-                school: "仁愛國小",
-                student: "林小強、黃小玲",
-                link: "https://meet.google.com/xyz-uvwx-rst"
-            },
-            "李小強": {
-                school: "中正國小",
-                student: "王小傑、蔡小雯",
-                link: "https://meet.google.com/123-456-789"
-            },
-            "陳小美": {
-                school: "文化國小",
-                student: "劉小安、許小婷",
-                link: "https://meet.google.com/qwe-rty-uio"
-            },
-            "林小雄": {
-                school: "育才國小",
-                student: "吳小凱、鄭小慧",
-                link: "https://meet.google.com/asd-fgh-jkl"
-            },
-            "黃小玲": {
-                school: "光明國小",
-                student: "謝小宇、周小琪",
-                link: "https://meet.google.com/zxc-vbn-mnb"
-            }
-        };
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // 幹部與大學伴名單 (保持在前端，因為這部分資料較少變動)
+        const cadreNames = ["張語妮", "簡婕安", "蘇上芸", "林子翔", "劉芯妍", "蘇立涵", "陳彥潔", "柯宜青", "饒子儀"];
+        const tutorNames = [
+            "陳可昕", "劉睿慈", "黃臻", "朱沁", "蘇怡彤", "簡榆穎", "沈宇蔵", "林睿愉", "洪以菲", "顏幼柔", 
+            "張芷涵", "黃心緹", "張皓童", "高子淇", "蔡慶愛", "許若", "卞歡", "黃崇育", "蘇家誼", "方乙捷", 
+            "周鈺軒", "江乙嫣", "黃熙予", "夏秉心", "陳蕾安", "陳曦", "周亭妘", "邱予歆", "李晨希", "Deepta Bhaskar", 
+            "林奕溱", "劉翊嘉", "李浩睿", "顏昊辰", "王睿瑄", "邱敏昕", "楊子樂", "余唐芯", "張端宸", "劉承艾", 
+            "林楷倫", "陳芳瑜"
+        ];
+
+        const allMemberNames = [...cadreNames, ...tutorNames];
+        const memberData = {};
+        allMemberNames.forEach((name, index) => {
+            memberData[name] = {
+                school: `範例國小${index + 1}`,
+                student: `小學伴${index + 1}`,
+                link: `https://meet.google.com/placeholder-${100 + index}`
+            };
+        });
 
         // 團班資料
         const groupClassData = {
-            "團班1": {
-                school: "多校聯合",
-                link: "https://meet.google.com/group-class-001"
-            },
-            "團班2": {
-                school: "多校聯合",
-                link: "https://meet.google.com/group-class-002"
-            },
-            "團班3": {
-                school: "多校聯合",
-                link: "https://meet.google.com/group-class-003"
-            },
-            "團班4": {
-                school: "多校聯合",
-                link: "https://meet.google.com/group-class-004"
-            },
-            "團班5": {
-                school: "多校聯合",
-                link: "https://meet.google.com/group-class-005"
+            "團班1": { school: "多校聯合", link: "https://meet.google.com/group-class-001" },
+            "團班2": { school: "多校聯合", link: "https://meet.google.com/group-class-002" },
+            "團班3": { school: "多校聯合", link: "https://meet.google.com/group-class-003" },
+            "團班4": { school: "多校聯合", link: "https://meet.google.com/group-class-004" },
+            "團班5": { school: "多校聯合", link: "https://meet.google.com/group-class-005" }
+        };
+
+        let assignCounts = {}; // 這個物件將由 Firebase 即時更新
+        let subCount = 1;
+        let db; // Firestore instance
+
+        // --- Firebase 初始化 ---
+        const setupFirebase = async () => {
+            try {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                const auth = getAuth(app);
+
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // 資料庫路徑
+                const countsDocRef = doc(db, `/artifacts/${appId}/public/data/assignmentCounts/summary`);
+
+                // 監聽雲端資料變化，即時同步
+                onSnapshot(countsDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        assignCounts = docSnap.data();
+                    } else {
+                        // 如果資料庫沒資料，則初始化
+                        const initialCounts = {};
+                        cadreNames.forEach(name => { initialCounts[name] = 0; });
+                        setDoc(countsDocRef, initialCounts);
+                        assignCounts = initialCounts;
+                    }
+                    displayAssignmentSummary();
+                    // 重新渲染表單以顯示最新的代課次數
+                    if (document.getElementById('form-container').children.length > 0) {
+                        resetForm();
+                    }
+                });
+                 // 確保第一次加載時能正確初始化 assignCounts
+                const initialDoc = await getDoc(countsDocRef);
+                if (!initialDoc.exists()) {
+                    const initialCounts = {};
+                    cadreNames.forEach(name => { initialCounts[name] = 0; });
+                    await setDoc(countsDocRef, initialCounts);
+                    assignCounts = initialCounts;
+                } else {
+                    assignCounts = initialDoc.data();
+                }
+                displayAssignmentSummary();
+
+
+            } catch (error) {
+                console.error("Firebase 初始化失敗:", error);
+                showModal("無法連接到雲端資料庫，請檢查網路連線或稍後再試。");
             }
         };
 
-        const memberNames = Object.keys(memberData);
-        let substituteAssignments = [];
-        let assignCounts = {};
-        let subCount = 1;
-
-        // 初始化計數器
-        memberNames.forEach(name => {
-            assignCounts[name] = 0;
-        });
-
         document.addEventListener('DOMContentLoaded', () => {
             setupEventListeners();
-            renderForm();
-            displayAssignmentSummary();
-            
-            // 生成示範資料
-            generateSampleData();
+            setupFirebase().then(() => {
+                renderForm(); // Firebase 初始化後再渲染表單
+            });
         });
-
-        // 生成示範資料
-        const generateSampleData = () => {
-            // 設定一些示範代課記錄
-            const sampleAssignments = [
-                {
-                    substituteCadre: "王小明",
-                    substitutedMember: "張小芳",
-                    school: "仁愛國小",
-                    student: "林小強、黃小玲",
-                    link: "https://meet.google.com/xyz-uvwx-rst",
-                    classType: "individual",
-                    date: new Date(Date.now() - 86400000).toISOString() // 昨天
-                },
-                {
-                    substituteCadre: "李小強",
-                    substitutedMember: "陳小美、林小雄",
-                    school: "多校聯合",
-                    student: "陳小美、林小雄",
-                    link: "https://meet.google.com/group-class-001",
-                    classType: "group",
-                    groupClass: "團班1",
-                    date: new Date(Date.now() - 172800000).toISOString() // 前天
-                }
-            ];
-
-            // 更新代課次數
-            assignCounts["王小明"] = 1;
-            assignCounts["李小強"] = 1;
-
-            // 加入到歷史記錄
-            substituteAssignments = [...sampleAssignments, ...substituteAssignments];
-            substituteAssignments.sort((a, b) => new Date(b.date) - new Date(a.date));
-        };
 
         const setupEventListeners = () => {
             document.getElementById('add-sub-btn').addEventListener('click', addSubstituteAssignment);
-            document.getElementById('generate-download-btn').addEventListener('click', generateAndDownload);
+            document.getElementById('generate-copy-btn').addEventListener('click', generateAndCopy);
         };
 
         const renderForm = () => {
@@ -168,93 +115,66 @@
             newForm.id = `sub-form-${subCount}`;
             newForm.className = 'bg-white p-6 rounded-lg shadow-md mb-6 transition-all duration-300 transform scale-100';
 
-            const sortedMembers = Object.entries(assignCounts).sort(([, a], [, b]) => a - b);
-            const substituteOptions = sortedMembers.map(([name, count]) => `<option value="${name}">${name} (${count} 次)</option>`).join('');
-            // 被代課大學伴選項中排除幹部
-            const nonCadreMembers = memberNames.filter(name => !sortedMembers.some(([memberName]) => memberName === name));
-            const memberOptions = nonCadreMembers.map(name => `<option value="${name}">${name}</option>`).join('');
+            const sortedCadres = cadreNames
+                .map(name => ({ name, count: assignCounts[name] || 0 }))
+                .sort((a, b) => a.count - b.count);
+            
+            const substituteOptions = sortedCadres
+                .map(({ name, count }) => `<option value="${name}">${name} (${count} 次)</option>`)
+                .join('');
+            
+            const memberOptions = tutorNames.map(name => `<option value="${name}">${name}</option>`).join('');
             const groupOptions = Object.keys(groupClassData).map(group => `<option value="${group}">${group}</option>`).join('');
 
             newForm.innerHTML = `
                 <div class="mb-4">
                     <h2 class="text-xl font-bold mb-2">代課班級 ${subCount}</h2>
-                    
-                    <!-- 班級類型選擇 -->
                     <div class="mb-4">
                         <label class="block text-gray-700 font-semibold mb-1">班級類型</label>
                         <div class="flex space-x-4">
-                            <label class="flex items-center">
-                                <input type="radio" name="class-type-${subCount}" value="individual" class="mr-2" checked>
-                                <span>個別班</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="radio" name="class-type-${subCount}" value="group" class="mr-2">
-                                <span>團班</span>
-                            </label>
+                            <label class="flex items-center"><input type="radio" name="class-type-${subCount}" value="individual" class="mr-2" checked><span>個別班</span></label>
+                            <label class="flex items-center"><input type="radio" name="class-type-${subCount}" value="group" class="mr-2"><span>團班</span></label>
                         </div>
                     </div>
-
-                    <div class="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
-                        <div class="flex-1">
-                            <label for="substitute-cadre-${subCount}" class="block text-gray-700 font-semibold mb-1">代課幹部</label>
-                            <select id="substitute-cadre-${subCount}" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">請選擇代課幹部</option>
-                                ${substituteOptions}
-                            </select>
-                        </div>
+                    <div class="flex-1">
+                        <label for="substitute-cadre-${subCount}" class="block text-gray-700 font-semibold mb-1">代課幹部</label>
+                        <select id="substitute-cadre-${subCount}" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">請選擇代課幹部</option>${substituteOptions}</select>
                     </div>
-
-                    <!-- 個別班選項 -->
                     <div id="individual-options-${subCount}" class="mt-4">
-                        <label for="substitute-member-${subCount}" class="block text-gray-700 font-semibold mb-1">被代課大學伴</label>
+                        <label for="substitute-member-${subCount}" class="block text-gray-700 font-semibold mb-1">大學伴</label>
                         <select id="substitute-member-${subCount}" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">請選擇被代課大學伴</option>
-                            ${memberOptions}
-                        </select>
+                            <option value="">請選擇大學伴</option>${memberOptions}</select>
                     </div>
-
-                    <!-- 團班選項 -->
                     <div id="group-options-${subCount}" class="mt-4 hidden">
                         <div class="mb-4">
                             <label for="group-class-${subCount}" class="block text-gray-700 font-semibold mb-1">團班</label>
                             <select id="group-class-${subCount}" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">請選擇團班</option>
-                                ${groupOptions}
-                            </select>
+                                <option value="">請選擇團班</option>${groupOptions}</select>
                         </div>
                         <div>
-                            <label class="block text-gray-700 font-semibold mb-1">被代課大學伴 (可多選)</label>
+                            <label class="block text-gray-700 font-semibold mb-1">大學伴 (可多選)</label>
                             <div id="group-members-${subCount}" class="border border-gray-300 rounded-md p-2 max-h-32 overflow-y-auto">
-                                ${nonCadreMembers.map(name => `
-                                    <label class="flex items-center mb-1">
-                                        <input type="checkbox" name="group-members-${subCount}" value="${name}" class="mr-2">
-                                        <span>${name}</span>
-                                    </label>
-                                `).join('')}
+                                ${tutorNames.map(name => `<label class="flex items-center mb-1"><input type="checkbox" name="group-members-${subCount}" value="${name}" class="mr-2"><span>${name}</span></label>`).join('')}
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- 資訊預覽區域 -->
                 <div id="member-info-${subCount}" class="mt-4 p-4 border border-blue-200 bg-blue-50 rounded-md hidden">
                     <p class="text-gray-700"><span class="font-bold">學校：</span><span id="school-${subCount}"></span></p>
                     <p class="text-gray-700"><span class="font-bold">小學伴：</span><span id="student-${subCount}"></span></p>
                     <p class="text-gray-700"><span class="font-bold">連結：</span><span id="link-${subCount}"></span></p>
-                </div>
-            `;
-
+                </div>`;
             formContainer.appendChild(newForm);
-
-            // 綁定班級類型切換事件
-            const classTypeRadios = document.querySelectorAll(`input[name="class-type-${subCount}"]`);
-            classTypeRadios.forEach(radio => {
+            addFormEventListeners(subCount);
+        };
+        
+        const addFormEventListeners = (formId) => {
+            document.querySelectorAll(`input[name="class-type-${formId}"]`).forEach(radio => {
                 radio.addEventListener('change', (e) => {
-                    const currentSubCount = subCount;
-                    const individualOptions = document.getElementById(`individual-options-${currentSubCount}`);
-                    const groupOptions = document.getElementById(`group-options-${currentSubCount}`);
-                    const infoContainer = document.getElementById(`member-info-${currentSubCount}`);
-                    
+                    const individualOptions = document.getElementById(`individual-options-${formId}`);
+                    const groupOptions = document.getElementById(`group-options-${formId}`);
+                    document.getElementById(`member-info-${formId}`).classList.add('hidden');
                     if (e.target.value === 'individual') {
                         individualOptions.classList.remove('hidden');
                         groupOptions.classList.add('hidden');
@@ -262,35 +182,18 @@
                         individualOptions.classList.add('hidden');
                         groupOptions.classList.remove('hidden');
                     }
-                    infoContainer.classList.add('hidden');
                 });
             });
-
-            // 個別班 - 被代課大學伴選擇事件
-            const subMemberSelect = document.getElementById(`substitute-member-${subCount}`);
-            subMemberSelect.addEventListener('change', (e) => {
-                updateMemberInfo(subCount, e.target.value);
-            });
-
-            // 團班 - 團班選擇事件
-            const groupClassSelect = document.getElementById(`group-class-${subCount}`);
-            groupClassSelect.addEventListener('change', (e) => {
-                updateGroupInfo(subCount, e.target.value);
-            });
-
-            // 團班 - 成員多選事件
-            const groupMemberCheckboxes = document.querySelectorAll(`input[name="group-members-${subCount}"]`);
-            groupMemberCheckboxes.forEach(checkbox => {
+            document.getElementById(`substitute-member-${formId}`).addEventListener('change', (e) => updateMemberInfo(formId, e.target.value));
+            document.getElementById(`group-class-${formId}`).addEventListener('change', (e) => updateGroupInfo(formId, e.target.value));
+            document.querySelectorAll(`input[name="group-members-${formId}"]`).forEach(checkbox => {
                 checkbox.addEventListener('change', () => {
-                    const groupClass = document.getElementById(`group-class-${subCount}`).value;
-                    if (groupClass) {
-                        updateGroupInfo(subCount, groupClass);
-                    }
+                    const groupClass = document.getElementById(`group-class-${formId}`).value;
+                    if (groupClass) updateGroupInfo(formId, groupClass);
                 });
             });
         };
 
-        // 更新個別班資訊
         const updateMemberInfo = (formIndex, memberName) => {
             const infoContainer = document.getElementById(`member-info-${formIndex}`);
             if (memberName && memberData[memberName]) {
@@ -304,13 +207,10 @@
             }
         };
 
-        // 更新團班資訊
         const updateGroupInfo = (formIndex, groupClass) => {
             const infoContainer = document.getElementById(`member-info-${formIndex}`);
             if (groupClass && groupClassData[groupClass]) {
-                const selectedMembers = Array.from(document.querySelectorAll(`input[name="group-members-${formIndex}"]:checked`))
-                    .map(checkbox => checkbox.value);
-                
+                const selectedMembers = Array.from(document.querySelectorAll(`input[name="group-members-${formIndex}"]:checked`)).map(cb => cb.value);
                 const data = groupClassData[groupClass];
                 document.getElementById(`school-${formIndex}`).textContent = data.school;
                 document.getElementById(`student-${formIndex}`).textContent = selectedMembers.length > 0 ? selectedMembers.join('、') : '未選擇成員';
@@ -324,209 +224,141 @@
         const addSubstituteAssignment = () => {
             const currentSubCount = subCount;
             const subCadre = document.getElementById(`substitute-cadre-${currentSubCount}`).value;
-            const classType = document.querySelector(`input[name="class-type-${currentSubCount}"]:checked`).value;
-            
-            let isValid = false;
-            
-            if (classType === 'individual') {
-                const subMember = document.getElementById(`substitute-member-${currentSubCount}`).value;
-                isValid = subCadre && subMember;
-            } else {
-                const groupClass = document.getElementById(`group-class-${currentSubCount}`).value;
-                const selectedMembers = Array.from(document.querySelectorAll(`input[name="group-members-${currentSubCount}"]:checked`));
-                isValid = subCadre && groupClass && selectedMembers.length > 0;
-            }
-
-            if (!isValid) {
-                const modal = document.getElementById('modal-message');
-                document.getElementById('modal-text').textContent = '請先完成當前代課班級的選擇';
-                modal.classList.remove('hidden');
+            if (!subCadre) {
+                 showModal('請先完成當前代課班級的選擇');
                 return;
             }
+            const classType = document.querySelector(`input[name="class-type-${currentSubCount}"]:checked`).value;
+            let isIndividualValid = (classType === 'individual' && document.getElementById(`substitute-member-${currentSubCount}`).value);
+            let isGroupValid = (classType === 'group' && document.getElementById(`group-class-${currentSubCount}`).value && document.querySelectorAll(`input[name="group-members-${currentSubCount}"]:checked`).length > 0);
 
+            if (!isIndividualValid && !isGroupValid) {
+                showModal('請先完成當前代課班級的選擇');
+                return;
+            }
             subCount++;
             renderForm();
         };
 
-        // 生成並下載PNG
-        const generateAndDownload = async () => {
-            // 先生成表格
-            const assignments = generateTableData();
+        const generateAndCopy = async () => {
+            const { assignments, newCounts } = generateAssignmentData();
             if (assignments.length === 0) {
-                const modal = document.getElementById('modal-message');
-                document.getElementById('modal-text').textContent = '請先完成代課班級的選擇';
-                modal.classList.remove('hidden');
+                showModal('請先完成代課班級的選擇');
                 return;
             }
 
-            // 顯示預覽
-            displayCurrentAssignments(assignments);
-            displayAssignmentSummary();
-            document.getElementById('table-preview').classList.remove('hidden');
-
-            // 生成並下載PNG
-            await downloadTableAsPNG();
+            const textChart = createTextChart(assignments);
+            copyToClipboard(textChart);
+            
+            // 更新 Firebase
+            try {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const countsDocRef = doc(db, `/artifacts/${appId}/public/data/assignmentCounts/summary`);
+                await setDoc(countsDocRef, newCounts); // setDoc 會覆蓋整個文件，符合我們的需求
+                 // 資料更新後，onSnapshot 會自動觸發 UI 更新，所以這裡不需要手動調用 displayAssignmentSummary
+            } catch (error) {
+                console.error("更新 Firebase 失敗:", error);
+                showModal("更新紀錄失敗，請檢查網路連線。");
+            }
+            
+            resetForm();
         };
 
-        // 生成表格資料
-        const generateTableData = () => {
+        const generateAssignmentData = () => {
             const assignments = [];
             const newCounts = { ...assignCounts };
 
             for (let i = 1; i <= subCount; i++) {
                 const cadreSelect = document.getElementById(`substitute-cadre-${i}`);
-                const classTypeRadio = document.querySelector(`input[name="class-type-${i}"]:checked`);
-                
-                if (!cadreSelect || !classTypeRadio) continue;
+                if (!cadreSelect || !cadreSelect.value) continue;
                 
                 const subCadre = cadreSelect.value;
-                const classType = classTypeRadio.value;
-                
-                if (!subCadre) continue;
+                const classType = document.querySelector(`input[name="class-type-${i}"]:checked`).value;
 
                 if (classType === 'individual') {
-                    const subMemberSelect = document.getElementById(`substitute-member-${i}`);
-                    if (!subMemberSelect) continue;
-                    
-                    const subMember = subMemberSelect.value;
+                    const subMember = document.getElementById(`substitute-member-${i}`).value;
                     if (subMember && memberData[subMember]) {
-                        const data = memberData[subMember];
-                        const assignment = {
-                            substituteCadre: subCadre,
-                            substitutedMember: subMember,
-                            school: data.school,
-                            student: data.student,
-                            link: data.link,
-                            classType: 'individual',
-                            date: new Date().toISOString()
-                        };
-                        assignments.push(assignment);
+                        assignments.push({ ...memberData[subMember], substituteCadre: subCadre, substitutedMember: subMember, classType: 'individual' });
                         newCounts[subCadre] = (newCounts[subCadre] || 0) + 1;
                     }
                 } else {
-                    const groupClassSelect = document.getElementById(`group-class-${i}`);
-                    if (!groupClassSelect) continue;
-                    
-                    const groupClass = groupClassSelect.value;
-                    const selectedMembers = Array.from(document.querySelectorAll(`input[name="group-members-${i}"]:checked`))
-                        .map(checkbox => checkbox.value);
-                    
+                    const groupClass = document.getElementById(`group-class-${i}`).value;
+                    const selectedMembers = Array.from(document.querySelectorAll(`input[name="group-members-${i}"]:checked`)).map(cb => cb.value);
                     if (groupClass && groupClassData[groupClass] && selectedMembers.length > 0) {
-                        const data = groupClassData[groupClass];
-                        const assignment = {
-                            substituteCadre: subCadre,
-                            substitutedMember: selectedMembers.join('、'),
-                            school: data.school,
-                            student: selectedMembers.join('、'),
-                            link: data.link,
-                            classType: 'group',
-                            groupClass: groupClass,
-                            date: new Date().toISOString()
-                        };
-                        assignments.push(assignment);
+                        assignments.push({ ...groupClassData[groupClass], substituteCadre: subCadre, substitutedMember: selectedMembers.join('、'), student: selectedMembers.join('、'), classType: 'group', groupClass: groupClass });
                         newCounts[subCadre] = (newCounts[subCadre] || 0) + 1;
                     }
                 }
             }
-
-            if (assignments.length > 0) {
-                assignCounts = newCounts;
-                substituteAssignments = [...assignments, ...substituteAssignments];
-                substituteAssignments.sort((a, b) => new Date(b.date) - new Date(a.date));
-            }
-
-            return assignments;
+            return { assignments, newCounts };
         };
 
-        // 下載為PNG
-        const downloadTableAsPNG = async () => {
-            const table = document.getElementById('output-table');
-            
-            // 使用html2canvas庫來截圖
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-            document.head.appendChild(script);
-            
-            script.onload = () => {
-                html2canvas(table, {
-                    backgroundColor: '#ffffff',
-                    scale: 2
-                }).then(canvas => {
-                    const link = document.createElement('a');
-                    link.download = `代課記錄_${new Date().toISOString().split('T')[0]}.png`;
-                    link.href = canvas.toDataURL();
-                    link.click();
-                });
-            };
+        const createTextChart = (assignments) => {
+            let chartText = `【本日代課資訊】\n\n`;
+            assignments.forEach((assignment, index) => {
+                const memberDisplay = assignment.classType === 'group'
+                    ? `${assignment.substitutedMember} (${assignment.groupClass})`
+                    : assignment.substitutedMember;
+                chartText += `項目 ${index + 1}:\n代課幹部： ${assignment.substituteCadre}\n大學伴： ${memberDisplay}\n學校： ${assignment.school}\n小學伴： ${assignment.student}\n連結： ${assignment.link}\n\n`;
+            });
+            return chartText.trim();
+        };
+
+        const copyToClipboard = (text) => {
+            const textArea = document.getElementById('copy-text-area');
+            textArea.value = text;
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                const toast = document.getElementById('copy-toast');
+                toast.classList.remove('hidden');
+                setTimeout(() => { toast.classList.add('hidden'); }, 2000);
+            } catch (err) {
+                console.error('無法複製文字: ', err);
+                showModal('複製失敗，請手動複製。');
+            }
         };
 
         const resetForm = () => {
-            // 清空表單容器
-            const formContainer = document.getElementById('form-container');
-            formContainer.innerHTML = '';
+            document.getElementById('form-container').innerHTML = '';
             subCount = 1;
             renderForm();
-        };
-
-        const displayCurrentAssignments = (assignments) => {
-            const tableBody = document.getElementById('table-body');
-            tableBody.innerHTML = '';
-            assignments.forEach(assignment => {
-                const row = document.createElement('tr');
-                row.className = 'border-b border-gray-200 hover:bg-gray-50';
-                
-                const classTypeDisplay = assignment.classType === 'group' ? `${assignment.groupClass}` : '';
-                const memberDisplay = assignment.classType === 'group' ? 
-                    `${assignment.substitutedMember} ${classTypeDisplay ? `(${classTypeDisplay})` : ''}` : 
-                    assignment.substitutedMember;
-                
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">${assignment.substituteCadre}</td>
-                    <td class="px-6 py-4 text-sm text-gray-800">${memberDisplay}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">${assignment.school}</td>
-                    <td class="px-6 py-4 text-sm text-gray-800">${assignment.student}</td>
-                    <td class="px-6 py-4 text-sm text-blue-600 hover:text-blue-800">
-                        <a href="${assignment.link}" target="_blank" class="underline">${assignment.link}</a>
-                    </td>
-                `;
-                tableBody.appendChild(row);
-            });
         };
 
         const displayAssignmentSummary = () => {
             const summaryTableBody = document.getElementById('summary-table-body');
             summaryTableBody.innerHTML = '';
             
-            const sortedCounts = Object.entries(assignCounts).sort(([, a], [, b]) => a - b);
-            sortedCounts.forEach(([name, count]) => {
-                const row = document.createElement('tr');
-                row.className = 'border-b border-gray-200 hover:bg-gray-50';
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">${count}</td>
-                `;
-                summaryTableBody.appendChild(row);
-            });
+            Object.entries(assignCounts)
+                .sort(([, a], [, b]) => a - b)
+                .forEach(([name, count]) => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-gray-200 hover:bg-gray-50';
+                    row.innerHTML = `<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${name}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">${count}</td>`;
+                    summaryTableBody.appendChild(row);
+                });
         };
 
-        const downloadTable = () => {
-            // 保留此函數以防需要
+        const showModal = (message) => {
+            document.getElementById('modal-text').textContent = message;
+            document.getElementById('modal-message').classList.remove('hidden');
         };
     </script>
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
+    <textarea id="copy-text-area" class="absolute -left-full"></textarea>
+    <div id="copy-toast" class="fixed bottom-5 right-5 bg-green-600 text-white px-5 py-3 rounded-lg shadow-lg hidden transition-opacity duration-300">
+        已複製到剪貼簿！
+    </div>
+
     <div class="container mx-auto p-8">
-        <!-- Header -->
         <div class="flex flex-col items-center mb-10">
             <div class="bg-blue-600 p-8 rounded-full shadow-lg transform -rotate-3 hover:rotate-0 transition-transform duration-500">
-                <h1 class="text-4xl md:text-5xl font-extrabold text-white text-center">
-                    幹部代課分配系統
-                </h1>
+                <h1 class="text-4xl md:text-5xl font-extrabold text-white text-center">幹部代課分配系統</h1>
             </div>
             <p class="text-gray-600 mt-4 text-center text-lg md:text-xl">輕鬆安排代課，自動追蹤紀錄！</p>
         </div>
 
-        <!-- Modal for alerts -->
         <div id="modal-message" class="fixed inset-0 z-50 overflow-y-auto hidden">
             <div class="flex items-center justify-center min-h-screen px-4 py-8">
                 <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
@@ -534,62 +366,28 @@
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         <div class="sm:flex sm:items-start">
                             <div class="mt-3 text-center sm:mt-0 sm:text-left">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                                    提示
-                                </h3>
-                                <div class="mt-2">
-                                    <p class="text-sm text-gray-500" id="modal-text"></p>
-                                </div>
+                                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">提示</h3>
+                                <div class="mt-2"><p class="text-sm text-gray-500" id="modal-text"></p></div>
                             </div>
                         </div>
                     </div>
                     <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                        <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick="document.getElementById('modal-message').classList.add('hidden')">
-                            確定
-                        </button>
+                        <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick="document.getElementById('modal-message').classList.add('hidden')">確定</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Assignment Form -->
         <div class="bg-white p-8 rounded-xl shadow-2xl mb-10">
             <h2 class="text-2xl font-bold mb-6 text-gray-800">新增代課班級</h2>
-            <div id="form-container">
-                <!-- Forms will be injected here -->
-            </div>
-            <button id="add-sub-btn" class="w-full md:w-auto px-6 py-3 mt-4 text-white font-bold bg-blue-500 rounded-lg shadow-lg hover:bg-blue-600 transition-colors duration-300 transform hover:scale-105">
-                新增代課班
-            </button>
+            <div id="form-container"></div>
+            <button id="add-sub-btn" class="w-full md:w-auto px-6 py-3 mt-4 text-white font-bold bg-blue-500 rounded-lg shadow-lg hover:bg-blue-600 transition-colors duration-300 transform hover:scale-105">新增代課班</button>
         </div>
 
-        <!-- Action Button -->
         <div class="flex justify-center mb-10">
-            <button id="generate-download-btn" class="px-8 py-4 text-white font-bold bg-green-500 rounded-lg shadow-lg hover:bg-green-600 transition-colors duration-300 transform hover:scale-105">
-                生成表格並下載PNG
-            </button>
+            <button id="generate-copy-btn" class="px-8 py-4 text-white font-bold bg-green-500 rounded-lg shadow-lg hover:bg-green-600 transition-colors duration-300 transform hover:scale-105">生成並複製</button>
         </div>
 
-        <!-- Preview Table -->
-        <div id="table-preview" class="bg-white p-8 rounded-xl shadow-2xl overflow-x-auto mb-10 hidden">
-            <h2 class="text-2xl font-bold mb-4 text-gray-800">本次代課預覽</h2>
-            <table id="output-table" class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">代課幹部</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">被代課大學伴</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">學校</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">小學伴</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">連結</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body" class="bg-white divide-y divide-gray-200">
-                    <!-- Table rows will be injected here -->
-                </tbody>
-            </table>
-        </div>
-
-        <!-- System Dashboard -->
         <div class="bg-white p-8 rounded-xl shadow-2xl">
             <h2 class="text-2xl font-bold mb-4 text-gray-800">代課幹部次數總覽</h2>
             <div class="overflow-x-auto">
@@ -600,12 +398,11 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">代課次數</th>
                         </tr>
                     </thead>
-                    <tbody id="summary-table-body" class="bg-white divide-y divide-gray-200">
-                        <!-- Summary rows will be injected here -->
-                    </tbody>
+                    <tbody id="summary-table-body" class="bg-white divide-y divide-gray-200"></tbody>
                 </table>
             </div>
         </div>
     </div>
 </body>
 </html>
+
